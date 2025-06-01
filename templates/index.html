@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Weather Stylist</title>
+    <link rel="stylesheet" href="/static/styles.css?v={{ timestamp }}">
+</head>
+<body>
+    <div class="container">
+        <h1>AI Weather Stylist</h1>
+        <p class="subtitle">Personalized outfits for your vibe and city’s weather</p>
+        <form method="POST" class="form" onsubmit="return validateForm()">
+            <div class="form-group">
+                <label for="gender">Gender</label>
+                <select id="gender" name="gender">
+                    <option value="male" {% if defaults.gender == "male" %}selected{% endif %}>Male</option>
+                    <option value="female" {% if defaults.gender == "female" %}selected{% endif %}>Female</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="occasion">Occasion</label>
+                <select id="occasion" name="occasion">
+                    <option value="casual" {% if defaults.occasion == "casual" %}selected{% endif %}>Casual</option>
+                    <option value="formal" {% if defaults.occasion == "formal" %}selected{% endif %}>Formal</option>
+                    <option value="work" {% if defaults.occasion == "work" %}selected{% endif %}>Work</option>
+                    <option value="party" {% if defaults.occasion == "party" %}selected{% endif %}>Party</option>
+                    <option value="date_night" {% if defaults.occasion == "date_night" %}selected{% endif %}>Date Night</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="color">Color Preference</label>
+                <select id="color" name="color">
+                    <option value="blue" {% if defaults.color == "blue" %}selected{% endif %}>Blue</option>
+                    <option value="red" {% if defaults.color == "red" %}selected{% endif %}>Red</option>
+                    <option value="black" {% if defaults.color == "black" %}selected{% endif %}>Black</option>
+                    <option value="white" {% if defaults.color == "white" %}selected{% endif %}>White</option>
+                    <option value="green" {% if defaults.color == "green" %}selected{% endif %}>Green</option>
+                    <option value="yellow" {% if defaults.color == "yellow" %}selected{% endif %}>Yellow</option>
+                    <option value="purple" {% if defaults.color == "purple" %}selected{% endif %}>Purple</option>
+                    <option value="orange" {% if defaults.color == "orange" %}selected{% endif %}>Orange</option>
+                    <option value="pink" {% if defaults.color == "pink" %}selected{% endif %}>Pink</option>
+                    <option value="gray" {% if defaults.color == "gray" %}selected{% endif %}>Gray</option>
+                    <option value="navy" {% if defaults.color == "navy" %}selected{% endif %}>Navy</option>
+                    <option value="beige" {% if defaults.color == "beige" %}selected{% endif %}>Beige</option>
+                    <option value="default" {% if defaults.color == "default" %}selected{% endif %}>Default</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="mood">Style Mood</label>
+                <select id="mood" name="mood">
+                    <option value="bold" {% if defaults.mood == "bold" %}selected{% endif %}>Bold</option>
+                    <option value="minimal" {% if defaults.mood == "minimal" %}selected{% endif %}>Minimal</option>
+                    <option value="cozy" {% if defaults.mood == "cozy" %}selected{% endif %}>Cozy</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="city">City</label>
+                <input type="text" id="city" name="city" placeholder="e.g., London, Tokyo, Mumbai" value="{{ defaults.city }}">
+            </div>
+            <div class="form-group">
+                <label for="day">Weather For</label>
+                <select id="day" name="day">
+                    <option value="0" {% if defaults.day == "0" %}selected{% endif %}>Today</option>
+                    <option value="1" {% if defaults.day == "1" %}selected{% endif %}>Tomorrow</option>
+                    <option value="2" {% if defaults.day == "2" %}selected{% endif %}>Day After Tomorrow</option>
+                    <option value="3" {% if defaults.day == "3" %}selected{% endif %}>In 3 Days</option>
+                </select>
+            </div>
+            <button type="submit" id="submit-btn">Get Recommendation</button>
+        </form>
+        {% if error %}
+        <div class="error">
+            <p>{{ error }} {% if "API key" in error %}Visit <a href="https://www.weatherapi.com/my" target="_blank">WeatherAPI</a> to verify your key.{% endif %}</p>
+        </div>
+        {% endif %}
+        {% if recommendation %}
+        <div class="recommendation">
+            <p class="outfit-items">{{ recommendation.split('\n\n')[0] }}</p>
+            <p class="outfit-description">{{ recommendation.split('\n\n')[1] }}</p>
+            <form method="POST" action="/save_favorite">
+                <input type="hidden" name="outfit" value="{{ recommendation }}">
+                <button type="submit" class="save-btn">Save to Favorites</button>
+            </form>
+        </div>
+        {% endif %}
+        <a href="/favorites" class="favorites-link">View Favorites</a>
+    </div>
+    <script>
+        async function validateCity(city) {
+            if (!city.trim()) {
+                return { valid: false, error: "City name cannot be empty." };
+            }
+            try {
+                const response = await fetch(`/validate_city?city=${encodeURIComponent(city)}`, { signal: AbortSignal.timeout(5000) });
+                return await response.json();
+            } catch (error) {
+                return { valid: false, error: `Cannot validate city: ${error.message}.` };
+            }
+        }
+
+        async function validateForm() {
+            const city = document.getElementById("city").value.trim();
+            const result = await validateCity(city);
+            if (!result.valid) {
+                alert(`${result.error} Using default city (London).`);
+                document.getElementById("city").value = "London";
+            }
+            return true;
+        }
+    </script>
+</body>
+</html>
